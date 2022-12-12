@@ -17,7 +17,9 @@
 package relays
 
 import (
+	"github.com/xelalexv/dregsy/internal/pkg/registry"
 	"github.com/xelalexv/dregsy/internal/pkg/tags"
+	"time"
 )
 
 //
@@ -31,9 +33,12 @@ type SyncOptions struct {
 	TrgtAuth          string
 	TrgtSkipTLSVerify bool
 	//
-	Tags     *tags.TagSet
-	Platform string
-	Verbose  bool
+	Tags          *tags.TagSet
+	Platform      string
+	Verbose       bool
+	ListSource    registry.ListSource
+	OnlyActive    bool
+	SinceDuration time.Duration
 }
 
 //

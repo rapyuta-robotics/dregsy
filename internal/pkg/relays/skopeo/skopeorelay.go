@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -92,7 +94,6 @@ func (r *SkopeoRelay) Sync(opt *relays.SyncOptions) error {
 
 	srcCreds := util.DecodeJSONAuth(opt.SrcAuth)
 	destCreds := util.DecodeJSONAuth(opt.TrgtAuth)
-
 	cmd := []string{
 		"--insecure-policy",
 		"copy",
@@ -123,15 +124,34 @@ func (r *SkopeoRelay) Sync(opt *relays.SyncOptions) error {
 	if destCreds != "" {
 		cmd = append(cmd, fmt.Sprintf("--dest-creds=%s", destCreds))
 	}
+	var tags []string
+	if opt.ListSource != nil && (opt.OnlyActive == true || opt.SinceDuration > 0) {
+		dockerhubrepo := strings.Join(strings.Split(opt.SrcRef, "/")[1:], "/")
+		now := time.Now()
+		tagsBlobs, err := opt.ListSource.ListTags(dockerhubrepo)
+		if err != nil {
+			return err
+		}
+		for _, tag := range tagsBlobs {
+			if opt.OnlyActive && tag.Status == "active" {
+				tags = append(tags, tag.Name)
+				continue
+			}
+			if opt.SinceDuration > 0 && (now.Sub(tag.LastPulled) > opt.SinceDuration || now.Sub(tag.LastPushed) > opt.SinceDuration) {
+				tags = append(tags, tag.Name)
+			}
 
-	tags, err := opt.Tags.Expand(func() ([]string, error) {
-		return ListAllTags(opt.SrcRef, srcCreds, srcCertDir, opt.SrcSkipTLSVerify)
-	})
+		}
+	} else {
+		var err error
+		tags, err = opt.Tags.Expand(func() ([]string, error) {
+			return ListAllTags(opt.SrcRef, srcCreds, srcCertDir, opt.SrcSkipTLSVerify)
+		})
 
-	if err != nil {
-		return fmt.Errorf("error expanding tags: %v", err)
+		if err != nil {
+			return fmt.Errorf("error expanding tags: %v", err)
+		}
 	}
-
 	errs := false
 
 	for _, t := range tags {

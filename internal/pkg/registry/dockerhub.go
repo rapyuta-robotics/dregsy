@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -55,8 +56,22 @@ type DHRepoDescriptor struct {
 	// affiliation 			string
 }
 
+type hubTagResponse struct {
+	Count    int            `json:"count"`
+	Next     string         `json:"next,omitempty"`
+	Previous string         `json:"previous,omitempty"`
+	Results  []hubTagResult `json:"results,omitempty"`
+}
+
+type hubTagResult struct {
+	Name       string    `json:"name"`
+	LastPulled time.Time `json:"tag_last_pulled,omitempty"`
+	LastPushed time.Time `json:"tag_last_pushed,omitempty"`
+	Status     string    `json:"tag_status,omitempty"`
+}
+
 //
-func newDockerhub(creds *auth.Credentials) ListSource {
+func NewDockerhub(creds *auth.Credentials) ListSource {
 	return &dockerhub{creds: creds}
 }
 
@@ -122,6 +137,58 @@ func (d *dockerhub) Retrieve(maxItems int) ([]string, error) {
 func (d *dockerhub) Ping() error {
 	_, err := d.getToken()
 	return err
+}
+func (d *dockerhub) ListTags(repo string) ([]Tag, error) {
+
+	var err error
+	token := d.creds.Token()
+
+	if token == nil || token.IsExpired() {
+		token, err = d.getToken()
+		if err != nil {
+			return nil, err
+		}
+		d.creds.SetToken(token)
+	} else {
+		log.Debug("token already present and still valid")
+	}
+
+	var tags []Tag
+	url := fmt.Sprintf("https://hub.docker.com/v2/repositories/%s/tags?page_size=100", repo)
+	for {
+		req, err := http.NewRequest("GET", url, nil)
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("JWT %s", token.Raw()))
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		var hubResponse hubTagResponse
+		if err := json.NewDecoder(resp.Body).Decode(&hubResponse); err != nil {
+			return nil, err
+		}
+
+		for _, result := range hubResponse.Results {
+			tag := Tag{
+				Name:       result.Name,
+				Status:     result.Status,
+				LastPulled: result.LastPulled,
+				LastPushed: result.LastPushed,
+			}
+			tags = append(tags, tag)
+		}
+
+		if hubResponse.Next == "" {
+			return tags, nil
+		}
+
+		url = hubResponse.Next
+	}
+	return nil, nil
 }
 
 //

@@ -19,7 +19,9 @@ package sync
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/xelalexv/dregsy/internal/pkg/tags"
 	"github.com/xelalexv/dregsy/internal/pkg/util"
@@ -30,15 +32,19 @@ const RegexpPrefix = "regex:"
 
 //
 type Mapping struct {
-	From     string   `yaml:"from"`
-	To       string   `yaml:"to"`
-	Tags     []string `yaml:"tags"`
-	Platform string   `yaml:"platform"`
+	From       string   `yaml:"from"`
+	To         string   `yaml:"to"`
+	Tags       []string `yaml:"tags"`
+	Platform   string   `yaml:"platform"`
+	OnlyActive string   `yaml:"only_active"`
+	Since      string   `yaml:"since"`
 	//
-	fromFilter *regexp.Regexp
-	toFilter   *regexp.Regexp
-	toReplace  string
-	tagSet     *tags.TagSet
+	fromFilter     *regexp.Regexp
+	toFilter       *regexp.Regexp
+	onlyActiveFlag bool
+	sinceDuration  time.Duration
+	toReplace      string
+	tagSet         *tags.TagSet
 }
 
 //
@@ -84,6 +90,17 @@ func (m *Mapping) validate() error {
 		return fmt.Errorf("'tags' uses invalid format: %v", err)
 	} else {
 		m.tagSet = tags
+	}
+	m.onlyActiveFlag = false
+	if m.OnlyActive != "" {
+		m.onlyActiveFlag, _ = strconv.ParseBool(m.OnlyActive)
+	}
+	if m.Since != "" {
+		var err error
+		m.sinceDuration, err = time.ParseDuration(m.Since)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -140,4 +157,14 @@ func normalizePath(p string) string {
 		return p
 	}
 	return "/" + p
+}
+
+//
+func (m *Mapping) hasSince() bool {
+	return m.sinceDuration > 0
+}
+
+//
+func (m *Mapping) onlyActive() bool {
+	return m.onlyActiveFlag
 }

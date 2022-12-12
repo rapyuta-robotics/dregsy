@@ -117,3 +117,7 @@ func (c *catalog) Ping() error {
 		context.TODO(), c.creds.Username(), c.creds.Password())
 	return err
 }
+
+func (c *catalog) ListTags(repo string) ([]Tag, error) {
+	return nil, nil
+}
