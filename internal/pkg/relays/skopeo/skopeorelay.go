@@ -137,7 +137,7 @@ func (r *SkopeoRelay) Sync(opt *relays.SyncOptions) error {
 				tags = append(tags, tag.Name)
 				continue
 			}
-			if opt.SinceDuration > 0 && (now.Sub(tag.LastPulled) > opt.SinceDuration || now.Sub(tag.LastPushed) > opt.SinceDuration) {
+			if opt.SinceDuration > 0 && (now.Sub(tag.LastPulled) < opt.SinceDuration || now.Sub(tag.LastPushed) < opt.SinceDuration) {
 				tags = append(tags, tag.Name)
 			}
 
