@@ -102,3 +102,7 @@ func isDockerHub(reg string) bool {
 		strings.HasSuffix(reg, ".docker.com") ||
 		strings.HasSuffix(reg, ".docker.io")
 }
+
+func (i *index) ListTags(repo string) ([]Tag, error) {
+	return nil, nil
+}

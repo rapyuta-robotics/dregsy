@@ -242,3 +242,11 @@ func (t *Task) ensureTargetExists(ref string) error {
 
 	return nil
 }
+
+func (t *Task) GetListSource() (source registry.ListSource) {
+	if t.Source.ListerType == registry.DockerHub {
+		return registry.NewDockerhub(t.Source.creds)
+	} else {
+		return nil
+	}
+}

@@ -230,7 +230,10 @@ func (s *Sync) syncTask(t *Task) {
 				TrgtAuth:          t.Target.GetAuth(),
 				TrgtSkipTLSVerify: t.Target.SkipTLSVerify,
 				Tags:              m.tagSet,
+				OnlyActive:        m.onlyActiveFlag,
+				SinceDuration:     m.sinceDuration,
 				Platform:          m.Platform,
+				ListSource:        t.GetListSource(),
 				Verbose:           t.Verbose}); err != nil {
 				log.Error(err)
 				t.fail(true)

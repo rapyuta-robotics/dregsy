@@ -110,3 +110,7 @@ func (e *ecr) getService() (*awsecr.ECR, error) {
 	}
 	return awsecr.New(sess, &aws.Config{Region: aws.String(e.region)}), nil
 }
+
+func (e *ecr) ListTags(repo string) ([]Tag, error) {
+	return nil, nil
+}

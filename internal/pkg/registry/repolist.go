@@ -48,10 +48,21 @@ func (t ListSourceType) IsValid() bool {
 	return false
 }
 
+type Tag struct {
+	Name                string
+	FullSize            int
+	LastUpdated         time.Time
+	LastUpdaterUserName string
+	LastPulled          time.Time
+	LastPushed          time.Time
+	Status              string
+}
+
 //
 type ListSource interface {
 	Ping() error
 	Retrieve(maxItems int) ([]string, error)
+	ListTags(repo string) ([]Tag, error)
 }
 
 //
@@ -84,7 +95,7 @@ func NewRepoList(registry string, insecure bool, typ ListSourceType,
 	switch typ {
 
 	case DockerHub:
-		list.source = newDockerhub(listCreds)
+		list.source = NewDockerhub(listCreds)
 
 	case Index:
 		if filter, ok := config["search"]; ok && filter != "" {
