@@ -125,25 +125,33 @@ func (r *SkopeoRelay) Sync(opt *relays.SyncOptions) error {
 		cmd = append(cmd, fmt.Sprintf("--dest-creds=%s", destCreds))
 	}
 	var tags []string
+	var err error
 	if opt.ListSource != nil && (opt.OnlyActive == true || opt.SinceDuration > 0) {
-		dockerhubrepo := strings.Join(strings.Split(opt.SrcRef, "/")[1:], "/")
-		now := time.Now()
-		tagsBlobs, err := opt.ListSource.ListTags(dockerhubrepo)
-		if err != nil {
-			return err
-		}
-		for _, tag := range tagsBlobs {
-			if opt.OnlyActive && tag.Status == "active" {
-				tags = append(tags, tag.Name)
-				continue
-			}
-			if opt.SinceDuration > 0 && (now.Sub(tag.LastPulled) < opt.SinceDuration || now.Sub(tag.LastPushed) < opt.SinceDuration) {
-				tags = append(tags, tag.Name)
-			}
+		tags, err = opt.Tags.Expand(func() ([]string, error) {
 
+			dockerhubrepo := strings.Join(strings.Split(opt.SrcRef, "/")[1:], "/")
+			now := time.Now()
+			tagsBlobs, err := opt.ListSource.ListTags(dockerhubrepo)
+			if err != nil {
+				return tags, err
+			}
+			for _, tag := range tagsBlobs {
+				if opt.OnlyActive && tag.Status == "active" {
+					tags = append(tags, tag.Name)
+					continue
+				}
+				if opt.SinceDuration > 0 && (now.Sub(tag.LastPulled) < opt.SinceDuration || now.Sub(tag.LastPushed) < opt.SinceDuration) {
+					tags = append(tags, tag.Name)
+				}
+
+			}
+			return tags, nil
+		})
+		if err != nil {
+			return fmt.Errorf("error expanding tags: %v", err)
 		}
+
 	} else {
-		var err error
 		tags, err = opt.Tags.Expand(func() ([]string, error) {
 			return ListAllTags(opt.SrcRef, srcCreds, srcCertDir, opt.SrcSkipTLSVerify)
 		})
