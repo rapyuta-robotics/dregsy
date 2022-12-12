@@ -158,13 +158,3 @@ func normalizePath(p string) string {
 	}
 	return "/" + p
 }
-
-//
-func (m *Mapping) hasSince() bool {
-	return m.sinceDuration > 0
-}
-
-//
-func (m *Mapping) onlyActive() bool {
-	return m.onlyActiveFlag
-}

@@ -76,10 +76,16 @@ tasks:
     #    (see below). When omitted, all image tags are synced.
     #  - With 'platform', the image to sync from a multi-platform source image
     #    can be selected (see below).
+    #  - With 'only_active', tags that have status "active" in dockerhub (dockerhub only)
+    #    can be selected (see below).
+    #  - With 'since', tags that have push or pull  in the last duration (dockerhub only)
+    #    can be selected ( Valid time units are “ns”, “us” (or “µs”), “ms”, “s”, “m”, “h”.).
     mappings:
       - from: test/image
         to: archive/test/image
         tags: ['0.1.0', '0.1.1']
+        since: 48h
+        only_active: true
       - from: test/another-image
         platform: linux/arm64/v8
 ```
